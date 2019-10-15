@@ -20,8 +20,8 @@ namespace Scurri.Tests.Core
             using (var scope = _fixture.Container.CreateScope())
             {
                 var client = scope.ServiceProvider.GetService<IRestScurriApiClient>();
-                var carriers = await client.GetCarriersAsync();
-                carriers.Count().Should().BeGreaterThan(0);
+                var carriers = await client.GetCarriersAsyncSafe();
+                carriers.data.Count().Should().BeGreaterThan(0);
             }
         }
         [Fact]

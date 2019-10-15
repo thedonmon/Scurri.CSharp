@@ -10,7 +10,7 @@ namespace Scurri.Client.Models
         public string carrier_id { get; set; }
         public string warehouse_id { get; set; }
     }
-    public class ManifestResponse
+    public class ManifestResult
     {
         public List<string> consignment_ids { get; set; }
         public string carrier_id { get; set; }

@@ -21,10 +21,10 @@ namespace Scurri.Client
         {
             _Config = Config;
             ValidateConfig(_Config);
-            _AuthToken = GenerateToken(_Config);
+            _AuthToken = GenerateTokenIfNotExist(_Config);
         }
 
-        private string GenerateToken(IScurriConfiguration config)
+        private string GenerateTokenIfNotExist(IScurriConfiguration config)
         {
             if (!NullHelper(false, config.AuthToken))
             {
@@ -35,6 +35,54 @@ namespace Scurri.Client
                 return Encoding.UTF8.EncodeBase64($"{config.UserName}:{config.Secret}");
             }
             else return null;
+        }
+         private async Task<ScurriResponse<T>> DoRequestSafeWithData<T>(T data, Func<T,Task<T>> action)
+        {
+            var response = new ScurriResponse<T>();
+            try
+            {
+                response.data = await action(data);
+                response.success = true;
+                response.StatusCode = System.Net.HttpStatusCode.OK;
+            }
+            catch (Exception ex)
+            {
+                response = HandleException(ex, response);
+            }
+            return response;
+        }
+        private async Task<ScurriResponse<TResult>> DoRequestSafeWithData<T, TResult>(T data, Func<T, Task<TResult>> action)
+        {
+            var response = new ScurriResponse<TResult>();
+            try
+            {
+                response.data = await action(data);
+                response.success = true;
+                response.StatusCode = System.Net.HttpStatusCode.OK;
+            }
+            catch (Exception ex)
+            {
+                response = HandleException(ex, response);
+            }
+            return response;
+        }
+        private ScurriResponse<T> HandleException<T>(Exception ex, ScurriResponse<T> response)
+        {
+            var flurlEx = ex as FlurlHttpException;
+
+            if (flurlEx != null)
+            {
+                response.StatusCode = flurlEx.Call.HttpStatus ?? System.Net.HttpStatusCode.InternalServerError;
+            }
+            else
+            {
+                response.StatusCode = System.Net.HttpStatusCode.InternalServerError;
+            }
+
+            response.error = ex.Message;
+            response.success = false;
+
+            return response;
         }
 
         private void ValidateConfig(IScurriConfiguration config)
@@ -60,23 +108,14 @@ namespace Scurri.Client
         /// The result contains the identifier for each carrier, which you can use in the rest of the API calls, whenever a Carrier needs to be specified. 
         /// The identifier will never change, so this can be called once to get the values.
         /// </summary>
-        /// <returns>Deserialized Object</returns>
+        /// <returns>Deserialized Object With More Response Data</returns>
         public async Task<List<Carrier>> GetCarriersAsync()
         {
-            var result = await $"{BaseUrl}{_Config.CompanySlug}/carriers/".WithHeader("Authorization", $"Basic {_AuthToken}").GetJsonAsync<List<Carrier>>();
-            return result;
+            return await $"{BaseUrl}{_Config.CompanySlug}/carriers/".WithHeader("Authorization", $"Basic {_AuthToken}").GetJsonAsync<List<Carrier>>();
         }
-        /// <summary>
-        /// The Carriers API allows you to query Scurri for the carriers that are enabled in your account.
-        /// The result contains the identifier for each carrier, which you can use in the rest of the API calls, whenever a Carrier needs to be specified. 
-        /// The identifier will never change, so this can be called once to get the values.
-        /// </summary>
-        /// <returns>HTTPResponse</returns>
-        public async Task<HttpResponseMessage> GetCarriersHttpResponseAsync()
+        public async Task<ScurriResponse<List<Carrier>>> GetCarriersAsyncSafe()
         {
-            var result = await $"{BaseUrl}{_Config.CompanySlug}/carriers/".WithHeader("Authorization", $"Basic {_AuthToken}").GetAsync();
-            var testStr = await result.Content.ReadAsStringAsync();
-            return result;
+            return await DoRequestSafe(GetCarriersAsync);
         }
         /// <summary>
         /// The CarrierServices API allows you to retrieve a list of services that have been enabled in your account.
@@ -93,6 +132,28 @@ namespace Scurri.Client
             return result;
         }
         /// <summary>
+        /// The CarrierServices API allows you to retrieve a list of services that have been enabled in your account.
+        /// The result contains the identifier for each service, which you can use in the rest of the API calls, whenever a Service needs to be specified.
+        /// </summary>
+        /// <param name="enhancements">Whether to include enhancements in the response Default: false</param>
+        /// <param name="package_types">Whether to include package types in the response Default: false</param>
+        /// <returns>Returns response object with error handling</returns>
+        public async Task<ScurriResponse<List<CarrierService>>> GetCarrierServicesAsyncSafe(bool enhancements = false, bool package_types = false)
+        {
+            var response = new ScurriResponse<List<CarrierService>>();
+            try
+            {
+                response.data = await GetCarrierServicesAsync(enhancements, package_types);
+                response.success = true;
+                response.StatusCode = System.Net.HttpStatusCode.OK;
+            }
+            catch(Exception ex)
+            {
+                response = HandleException(ex, response);
+            }
+            return response;
+        }
+        /// <summary>
         /// The Warehouses API allows you to retrieve a list of warehouses that you have access to (within a company).
         /// </summary>
         /// <returns></returns>
@@ -101,6 +162,14 @@ namespace Scurri.Client
             var result = await $"{BaseUrl}{_Config.CompanySlug}/warehouses/".WithHeader("Authorization", $"Basic {_AuthToken}")
                 .GetJsonAsync<List<Warehouse>>();
             return result;
+        }
+        /// <summary>
+        /// The Warehouses API allows you to retrieve a list of warehouses that you have access to (within a company).
+        /// </summary>
+        /// <returns>Returns response object with error handling</returns>
+        public async Task<ScurriResponse<List<Warehouse>>> GetWarehousesAsyncSafe()
+        {
+            return await DoRequestSafe(GetWarehousesAsync);
         }
         /// <summary>
         /// You can get use this API call to retrieve the list of consignments in Scurri.Pagination is provided via the offset and limit GET parameters.
@@ -118,6 +187,33 @@ namespace Scurri.Client
                 .SetQueryParams(new { offset = offset, limit = limit, identifier = identifier, status = status }, Flurl.NullValueHandling.Remove)
                 .GetJsonAsync<PaginationResult<Consignment>>();
             return result;
+        }
+        /// <summary>
+        /// You can get use this API call to retrieve the list of consignments in Scurri.Pagination is provided via the offset and limit GET parameters.
+        /// For the offset, we don't use an integer value but instead use the last identifier of the current batch. 
+        /// The next value returned with the response body contains a URL you can use to retrieve the next batch.
+        /// </summary>
+        /// <param name="offset">The offset for any pagination. This is the string identifier of the last consignment entry in the current batch.</param>
+        /// <param name="limit"></param>
+        /// <param name="identifier"></param>
+        /// <param name="status">Possible values:  Unallocated , Allocated , Printed , Manifested , Despatched , Delivered , Exception , Cancelled </param>
+        /// <returns>Returns response object with error handling</returns>
+        public async Task<ScurriResponse<PaginationResult<Consignment>>> GetConsignmentsAsyncSafe(string offset = "", int limit = 10, string identifier = null, string status = null)
+        {
+            var response = new ScurriResponse<PaginationResult<Consignment>>();
+            try
+            {
+                response.data = await $"{BaseUrl}{_Config.CompanySlug}/consignments/".WithHeader("Authorization", $"Basic {_AuthToken}")
+                .SetQueryParams(new { offset = offset, limit = limit, identifier = identifier, status = status }, Flurl.NullValueHandling.Remove)
+                .GetJsonAsync<PaginationResult<Consignment>>();
+                response.success = true;
+                response.StatusCode = System.Net.HttpStatusCode.OK;
+            }
+            catch (Exception ex)
+            {
+                response = HandleException(ex, response);
+            }
+            return response;
         }
         public async Task<List<Consignment>> GetConsignmentsPagedAsync(int pagesToIterate = 0, string offset = "", int limit = 10, string identifier = null, string status = null)
         {
@@ -147,6 +243,43 @@ namespace Scurri.Client
             }
             return allCosignments;
         }
+        public async Task<ScurriResponse<List<Consignment>>> GetConsignmentsPagedAsyncSafe(int pagesToIterate = 0, string offset = "", int limit = 10, string identifier = null, string status = null)
+        {
+            var response = new ScurriResponse<List<Consignment>> { data = new List<Consignment>() };
+            try
+            {
+
+                if (pagesToIterate > 0)
+                {
+                    var count = pagesToIterate;
+                    var resultsToPaginate = await GetConsignmentsAsyncSafe();
+                    response.data.AddRange(resultsToPaginate.data.results);
+                    while (!string.IsNullOrEmpty(resultsToPaginate.data.next) && resultsToPaginate.data.count <= count)
+                    {
+                        var r = await GetConsignmentsAsync(offset: resultsToPaginate.data.next, limit, identifier, status);
+                        response.data.AddRange(r.results);
+                        count--;
+                    }
+                    response.success = true;
+                    response.StatusCode = System.Net.HttpStatusCode.OK;
+                }
+                else
+                {
+                    var results = await GetConsignmentsAsyncSafe();
+                    response.data.AddRange(results.data.results);
+                    while (!string.IsNullOrEmpty(results.data.next))
+                    {
+                        var r = await GetConsignmentsAsync(offset: results.data.next, limit, identifier, status);
+                        response.data.AddRange(r.results);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                response = HandleException(ex, response);
+            }
+            return response;
+        }
         /// <summary>
         /// You can use this API call to get all details for the specified consignment.For instance, this is how you can query the status of a consignment and get any error messages from the allocation phase.
         /// </summary>
@@ -157,6 +290,16 @@ namespace Scurri.Client
             var result = await $"{BaseUrl}{_Config.CompanySlug}/consignment/{consignment_id}".WithHeader("Authorization", $"Basic {_AuthToken}")
                 .GetJsonAsync<Consignment>();
             return result;
+        }
+        /// <summary>
+        /// You can use this API call to get all details for the specified consignment.For instance, this is how you can query the status of a consignment and get any error messages from the allocation phase.
+        /// </summary>
+        /// <param name="consignment_id">The consignment identifier for the consignment</param>
+        /// <returns>resultsReturns response object with error handling</returns>
+        public async Task<ScurriResponse<Consignment>> GetConsignmentAsyncSafe(string consignment_id)
+        {
+            return await DoRequestSafeWithData(consignment_id, GetConsignmentAsync);
+
         }
         /// <summary>
         /// You can use this API call to create one or more new consignments. In both cases, you have to specify a list in the body.
@@ -176,6 +319,19 @@ namespace Scurri.Client
             return result;
         }
         /// <summary>
+        /// You can use this API call to create one or more new consignments. In both cases, you have to specify a list in the body.
+        /// Rules are always executed against your consignment data during the allocation phase.Another thing to keep in mind is that, in the case of batch creating consignments, Scurri will run any allocation processes asynchronously.
+        /// As a result, a label will not be available straight away. If your request contains data only for a single consignment then the allocation happens synchronously.
+        /// If you need a way to associate your internal packages with Scurri packages, please use the key reference that is available for each package.The reference don't need to be unique per company or per item.
+        /// Finally, some carriers support enhancements and carrier-specific options which must be specified in the "options" field, in example: Signed Consignments ("signed") or Package Type ("package_type").
+        /// </summary>
+        /// <param name="consigments">List of consignments to create wrapped in response object</param>
+        /// <returns></returns>
+        public async Task<ScurriResponse<CreateObjectResponse>> CreateConsignmentAsyncSafe(List<Consignment> consigments)
+        {
+            return await DoRequestSafeWithData(consigments, CreateConsignmentAsync);
+        }
+        /// <summary>
         /// You can use this API call to update the details of the specified consignment.The API does not support partial updates, so you have to specify all values, when using this API call.
         /// </summary>
         /// <param name="consigment"></param>
@@ -189,6 +345,31 @@ namespace Scurri.Client
             return result;
         }
         /// <summary>
+        /// You can use this API call to update the details of the specified consignment.The API does not support partial updates, so you have to specify all values, when using this API call.
+        /// </summary>
+        /// <param name="consigment"></param>
+        /// <returns></returns>
+        public async Task<ScurriResponse<Consignment>> UpdateConsignmentAsyncSafe(Consignment consigment)
+        {
+            return await DoRequestSafeWithData<Consignment>(consigment, UpdateConsignmentAsync);
+        }
+        private async Task<ScurriResponse<T>> DoRequestSafe<T>(Func<Task<T>> action)
+        {
+            var response = new ScurriResponse<T>();
+            try
+            {
+                response.data = await action();
+                response.success = true;
+                response.StatusCode = System.Net.HttpStatusCode.OK;
+            }
+            catch (Exception ex)
+            {
+                response = HandleException(ex, response);
+            }
+            return response;
+        }
+       
+        /// <summary>
         /// You can use this API call to cancel a consignment. Scurri will notify, when necessary, the carrier to void the generated labels.
         /// </summary>
         /// <param name="consigmentid">The consignment identifier for the consignment</param>
@@ -199,6 +380,15 @@ namespace Scurri.Client
                 .DeleteAsync();
 
             return response;
+        }
+        /// <summary>
+        /// You can use this API call to cancel a consignment. Scurri will notify, when necessary, the carrier to void the generated labels.
+        /// </summary>
+        /// <param name="consigmentid">The consignment identifier for the consignment</param>
+        /// <returns></returns>
+        public async Task<ScurriResponse<HttpResponseMessage>> CancelConsignmentAsyncSafe(string consigmentid)
+        {
+            return await DoRequestSafeWithData(consigmentid, CancelConsignmentAsync);
         }
         /// <summary>
         /// You can use this API call to get the label and any customs invoice documents required for a specific consignment, if required.
@@ -236,9 +426,9 @@ namespace Scurri.Client
         /// </summary>
         /// <param name="manifest"></param>
         /// <returns></returns>
-        public async Task<ManifestResponse> CreateManifestAsync(Manifest manifest)
+        public async Task<ManifestResult> CreateManifestAsync(Manifest manifest)
         {
-            var mResponse = new ManifestResponse
+            var mResponse = new ManifestResult
             {
                 carrier_id = manifest.carrier_id,
                 consignment_ids = manifest.consignment_ids,
@@ -248,7 +438,7 @@ namespace Scurri.Client
             {
                 var response = await $"{BaseUrl}{_Config.CompanySlug}/manifest/".WithHeader("Authorization", $"Basic {_AuthToken}")
                                 .PostJsonAsync(manifest);
-                var result = JsonConvert.DeserializeObject<ManifestResponse>(await response.Content.ReadAsStringAsync(), new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+                var result = JsonConvert.DeserializeObject<ManifestResult>(await response.Content.ReadAsStringAsync(), new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
                 mResponse.identifier = result.identifier;
                 mResponse.success = response.StatusCode == System.Net.HttpStatusCode.Created;
 
@@ -261,6 +451,7 @@ namespace Scurri.Client
 
             return mResponse;
         }
+      
         /// <summary>
         /// The response contains the PDF documents as a base64-encoded string.
         /// </summary>
@@ -282,6 +473,30 @@ namespace Scurri.Client
                     break;
                 case System.Net.HttpStatusCode.Conflict:
                     result.error = "The manifesting process has failed. Please try creating the manifest again";
+                    break;
+            }
+            return response;
+        }
+        /// <summary>
+        /// The response contains the PDF documents as a base64-encoded string.
+        /// </summary>
+        /// <param name="manifest_id">The identifier of the manifest, as returned by the create API call.</param>
+        /// <returns></returns>
+        public async Task<ScurriResponse<HttpResponseMessage>> GetManifestDocumentsAsyncSafe(string manifest_id)
+        {
+            var response = await DoRequestSafeWithData(manifest_id, GetManifestDocumentsAsync);
+            var result = JsonConvert.DeserializeObject<ManifestDocuments>(await response.data.Content.ReadAsStringAsync(), new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            result.success = response.StatusCode == System.Net.HttpStatusCode.OK;
+            switch (response.StatusCode)
+            {
+                case System.Net.HttpStatusCode.NoContent:
+                    result.error += "The documents are not ready yet";
+                    break;
+                case System.Net.HttpStatusCode.BadRequest:
+                    result.error += "There is something wrong with the request. Please check the identifier and try again";
+                    break;
+                case System.Net.HttpStatusCode.Conflict:
+                    result.error += "The manifesting process has failed. Please try creating the manifest again";
                     break;
             }
             return response;
