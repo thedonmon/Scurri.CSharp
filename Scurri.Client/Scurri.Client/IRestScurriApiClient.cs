@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Scurri.Client
 {
-    public interface IRestApiClient
+    public interface IRestScurriApiClient
     {
         /// <summary>
         /// The Carriers API allows you to query Scurri for the carriers that are enabled in your account.

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Scurri.Client
 {
-    public class Client : IRestApiClient
+    public class Client : IRestScurriApiClient
     {
         private readonly IScurriConfiguration _Config;
         private readonly string _AuthToken;
