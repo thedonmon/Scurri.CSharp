@@ -14,6 +14,7 @@ namespace Scurri.Client
         /// </summary>
         /// <returns></returns>
         Task<List<Carrier>> GetCarriersAsync();
+        Task<HttpResponseMessage> GetCarriersHttpResponseAsync();
         /// <summary>
         /// The CarrierServices API allows you to retrieve a list of services that have been enabled in your account.
         /// The result contains the identifier for each service, which you can use in the rest of the API calls, whenever a Service needs to be specified.

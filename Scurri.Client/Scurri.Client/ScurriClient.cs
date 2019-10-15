@@ -10,14 +10,14 @@ using System.Threading.Tasks;
 
 namespace Scurri.Client
 {
-    public class Client : IRestScurriApiClient
+    public class ScurriClient : IRestScurriApiClient
     {
         private readonly IScurriConfiguration _Config;
         private readonly string _AuthToken;
         private const string BaseUrl = "https://sandbox.scurri.co.uk/api/v1/company/";
 
 
-        public Client(IScurriConfiguration Config)
+        public ScurriClient(IScurriConfiguration Config)
         {
             _Config = Config;
             ValidateConfig(_Config);
@@ -60,10 +60,22 @@ namespace Scurri.Client
         /// The result contains the identifier for each carrier, which you can use in the rest of the API calls, whenever a Carrier needs to be specified. 
         /// The identifier will never change, so this can be called once to get the values.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Deserialized Object</returns>
         public async Task<List<Carrier>> GetCarriersAsync()
         {
             var result = await $"{BaseUrl}{_Config.CompanySlug}/carriers/".WithHeader("Authorization", $"Basic {_AuthToken}").GetJsonAsync<List<Carrier>>();
+            return result;
+        }
+        /// <summary>
+        /// The Carriers API allows you to query Scurri for the carriers that are enabled in your account.
+        /// The result contains the identifier for each carrier, which you can use in the rest of the API calls, whenever a Carrier needs to be specified. 
+        /// The identifier will never change, so this can be called once to get the values.
+        /// </summary>
+        /// <returns>HTTPResponse</returns>
+        public async Task<HttpResponseMessage> GetCarriersHttpResponseAsync()
+        {
+            var result = await $"{BaseUrl}{_Config.CompanySlug}/carriers/".WithHeader("Authorization", $"Basic {_AuthToken}").GetAsync();
+            var testStr = await result.Content.ReadAsStringAsync();
             return result;
         }
         /// <summary>
