@@ -52,6 +52,7 @@ namespace Scurri.Client.Models
     public class Options
     {
         public string package_type { get; set; }
+        public string signed { get; set; }
     }
 
     public class Invoice
