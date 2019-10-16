@@ -22,8 +22,8 @@ namespace Scurri.Tests.Core
             using (var scope = _fixture.Container.CreateScope())
             {
                 var client = scope.ServiceProvider.GetService<IRestScurriApiClient>();
-                var warehouses = await client.GetWarehousesAsync();
-                warehouses.Count.Should().BeGreaterThan(0);
+                var warehouses = await client.GetWarehousesAsyncSafe();
+                warehouses.data.Count.Should().BeGreaterThan(0);
             }
         }
     }

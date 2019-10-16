@@ -17,7 +17,10 @@ namespace Scurri.Client.Models
         public Options options { get; set; }
         public string order_number { get; set; }
         public double? order_value { get; set; }
-        public List<Package> pacakages { get; set; }
+        public List<Package> packages { get; set; }
+        public string custom_field_1 { get; set; }
+        public string custom_field_2 { get; set; }
+
         public Recipient recipient { get; set; }
         public string rules_package_type { get; set; }
         public string service { get; set; }
@@ -33,7 +36,7 @@ namespace Scurri.Client.Models
         public string reference { get; set; }
         public double height { get; set; }
         public List<Item> items { get; set; }
-        public int lenght { get; set; }
+        public double length { get; set; }
         public string tracking_number { get; set; }
         public double width { get; set; }
     }
