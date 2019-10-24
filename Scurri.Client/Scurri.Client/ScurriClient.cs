@@ -14,7 +14,7 @@ namespace Scurri.Client
     {
         private readonly IScurriConfiguration _Config;
         private readonly string _AuthToken;
-        private const string BaseUrl = "https://sandbox.scurri.co.uk/api/v1/company/";
+        private string BaseUrl = "https://sandbox.scurri.co.uk/api/v1/company/";
 
 
         public ScurriClient(IScurriConfiguration Config)
