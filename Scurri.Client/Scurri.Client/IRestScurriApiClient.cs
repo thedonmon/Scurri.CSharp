@@ -7,20 +7,13 @@ namespace Scurri.Client
 {
     public interface IRestScurriApiClient
     {
-        /// <summary>
-        /// The Carriers API allows you to query Scurri for the carriers that are enabled in your account.
-        /// The result contains the identifier for each carrier, which you can use in the rest of the API calls, whenever a Carrier needs to be specified. 
-        /// The identifier will never change, so this can be called once to get the values.
-        /// </summary>
-        /// <returns></returns>
-        Task<List<Carrier>> GetCarriersAsync();
-        /// <summary>
+       
         /// The Carriers API allows you to query Scurri for the carriers that are enabled in your account.
         /// The result contains the identifier for each carrier, which you can use in the rest of the API calls, whenever a Carrier needs to be specified. 
         /// The identifier will never change, so this can be called once to get the values.
         /// </summary>
         /// <returns>Response object with error handling logic</returns>
-        Task<ScurriResponse<List<Carrier>>> GetCarriersAsyncSafe();
+        Task<ScurriResponse<List<Carrier>>> GetCarriersAsync();
 
         /// <summary>
         /// The CarrierServices API allows you to retrieve a list of services that have been enabled in your account.
@@ -28,37 +21,14 @@ namespace Scurri.Client
         /// </summary>
         /// <param name="enhancements">Whether to include enhancements in the response Default: false</param>
         /// <param name="package_types">Whether to include package types in the response Default: false</param>
-        /// <returns></returns>
-        Task<List<CarrierService>> GetCarrierServicesAsync(bool enhancements = false, bool package_types = false);
-        /// <summary>
-        /// The CarrierServices API allows you to retrieve a list of services that have been enabled in your account.
-        /// The result contains the identifier for each service, which you can use in the rest of the API calls, whenever a Service needs to be specified.
-        /// </summary>
-        /// <param name="enhancements">Whether to include enhancements in the response Default: false</param>
-        /// <param name="package_types">Whether to include package types in the response Default: false</param>
         /// <returns>Returns response object with error handling</returns>
-        Task<ScurriResponse<List<CarrierService>>> GetCarrierServicesAsyncSafe(bool enhancements = false, bool package_types = false);
-        /// <summary>
-        /// The Warehouses API allows you to retrieve a list of warehouses that you have access to (within a company).
-        /// </summary>
-        /// <returns></returns>
-        Task<List<Warehouse>> GetWarehousesAsync();
+        Task<ScurriResponse<List<CarrierService>>> GetCarrierServicesAsync(bool enhancements = false, bool package_types = false);
+   
         /// <summary>
         /// The Warehouses API allows you to retrieve a list of warehouses that you have access to (within a company).
         /// </summary>
         /// <returns>Returns response object with error handling</returns>
-        Task<ScurriResponse<List<Warehouse>>> GetWarehousesAsyncSafe();
-        /// <summary>
-        /// You can get use this API call to retrieve the list of consignments in Scurri.Pagination is provided via the offset and limit GET parameters.
-        /// For the offset, we don't use an integer value but instead use the last identifier of the current batch. 
-        /// The next value returned with the response body contains a URL you can use to retrieve the next batch.
-        /// </summary>
-        /// <param name="offset">The offset for any pagination. This is the string identifier of the last consignment entry in the current batch.</param>
-        /// <param name="limit"></param>
-        /// <param name="identifier"></param>
-        /// <param name="status">Possible values:  Unallocated , Allocated , Printed , Manifested , Despatched , Delivered , Exception , Cancelled </param>
-        /// <returns></returns>
-        Task<PaginationResult<Consignment>> GetConsignmentsAsync(string offset = "", int limit = 10, string identifier = null, string status = null);
+        Task<ScurriResponse<List<Warehouse>>> GetWarehousesAsync();
         /// <summary>
         /// You can get use this API call to retrieve the list of consignments in Scurri.Pagination is provided via the offset and limit GET parameters.
         /// For the offset, we don't use an integer value but instead use the last identifier of the current batch. 
@@ -69,31 +39,33 @@ namespace Scurri.Client
         /// <param name="identifier"></param>
         /// <param name="status">Possible values:  Unallocated , Allocated , Printed , Manifested , Despatched , Delivered , Exception , Cancelled </param>
         /// <returns>Returns response object with error handling</returns>
-        Task<ScurriResponse<PaginationResult<Consignment>>> GetConsignmentsAsyncSafe(string offset = "", int limit = 10, string identifier = null, string status = null);
+        Task<ScurriResponse<PaginationResult<Consignment>>> GetConsignmentsAsync(string offset = "", int limit = 10, string identifier = null, string status = null);
+        /// <summary>
+        /// Consignments in a list format. No error handling.
+        /// </summary>
+        /// <param name="pagesToIterate"></param>
+        /// <param name="offset"></param>
+        /// <param name="limit"></param>
+        /// <param name="identifier"></param>
+        /// <param name="status">Possible values:  Unallocated , Allocated , Printed , Manifested , Despatched , Delivered , Exception , Cancelled </param>
+        /// <returns></returns>
         Task<List<Consignment>> GetConsignmentsPagedAsync(int pagesToIterate = 0, string offset = "", int limit = 10, string identifier = null, string status = null);
+        /// <summary>
+        /// Consignments in a list format. With Error Handling
+        /// </summary>
+        /// <param name="pagesToIterate"></param>
+        /// <param name="offset"></param>
+        /// <param name="limit"></param>
+        /// <param name="identifier"></param>
+        /// <param name="status">Possible values:  Unallocated , Allocated , Printed , Manifested , Despatched , Delivered , Exception , Cancelled </param>
+        /// <returns></returns>
         Task<ScurriResponse<List<Consignment>>> GetConsignmentsPagedAsyncSafe(int pagesToIterate = 0, string offset = "", int limit = 10, string identifier = null, string status = null);
         /// <summary>
         /// You can use this API call to get all details for the specified consignment.For instance, this is how you can query the status of a consignment and get any error messages from the allocation phase.
         /// </summary>
         /// <param name="consignment_id">The consignment identifier for the consignment</param>
-        /// <returns></returns>
-        Task<Consignment> GetConsignmentAsync(string consignment_id);
-        /// <summary>
-        /// You can use this API call to get all details for the specified consignment.For instance, this is how you can query the status of a consignment and get any error messages from the allocation phase.
-        /// </summary>
-        /// <param name="consignment_id">The consignment identifier for the consignment</param>
         /// <returns>resultsReturns response object with error handling</returns>
-        Task<ScurriResponse<Consignment>> GetConsignmentAsyncSafe(string consignment_id);
-        /// <summary>
-        /// You can use this API call to create one or more new consignments. In both cases, you have to specify a list in the body.
-        /// Rules are always executed against your consignment data during the allocation phase.Another thing to keep in mind is that, in the case of batch creating consignments, Scurri will run any allocation processes asynchronously.
-        /// As a result, a label will not be available straight away. If your request contains data only for a single consignment then the allocation happens synchronously.
-        /// If you need a way to associate your internal packages with Scurri packages, please use the key reference that is available for each package.The reference don't need to be unique per company or per item.
-        /// Finally, some carriers support enhancements and carrier-specific options which must be specified in the "options" field, in example: Signed Consignments ("signed") or Package Type ("package_type").
-        /// </summary>
-        /// <param name="consigments">List of consignments to create</param>
-        /// <returns></returns>
-        Task<CreateObjectResponse> CreateConsignmentAsync(List<Consignment> consigments);
+        Task<ScurriResponse<Consignment>> GetConsignmentAsync(string consignment_id);
         /// <summary>
         /// You can use this API call to create one or more new consignments. In both cases, you have to specify a list in the body.
         /// Rules are always executed against your consignment data during the allocation phase.Another thing to keep in mind is that, in the case of batch creating consignments, Scurri will run any allocation processes asynchronously.
@@ -103,31 +75,19 @@ namespace Scurri.Client
         /// </summary>
         /// <param name="consigments">List of consignments to create wrapped in response object</param>
         /// <returns></returns>
-        Task<ScurriResponse<CreateObjectResponse>> CreateConsignmentAsyncSafe(List<Consignment> consigments);
+        Task<ScurriResponse<CreateObjectResponse>> CreateConsignmentAsync(List<Consignment> consigments);
         /// <summary>
         /// You can use this API call to update the details of the specified consignment.The API does not support partial updates, so you have to specify all values, when using this API call.
         /// </summary>
         /// <param name="consigment"></param>
         /// <returns></returns>
-        Task<Consignment> UpdateConsignmentAsync(Consignment consigment);
-        /// <summary>
-        /// You can use this API call to update the details of the specified consignment.The API does not support partial updates, so you have to specify all values, when using this API call.
-        /// </summary>
-        /// <param name="consigment"></param>
-        /// <returns></returns>
-        Task<ScurriResponse<Consignment>> UpdateConsignmentAsyncSafe(Consignment consigment);
+        Task<ScurriResponse<Consignment>> UpdateConsignmentAsync(Consignment consigment);
         /// <summary>
         /// You can use this API call to cancel a consignment. Scurri will notify, when necessary, the carrier to void the generated labels.
         /// </summary>
         /// <param name="consigmentid">The consignment identifier for the consignment</param>
         /// <returns></returns>
-        Task<HttpResponseMessage> CancelConsignmentAsync(string consigmentid);
-        /// <summary>
-        /// You can use this API call to cancel a consignment. Scurri will notify, when necessary, the carrier to void the generated labels.
-        /// </summary>
-        /// <param name="consigmentid">The consignment identifier for the consignment</param>
-        /// <returns></returns>
-        Task<ScurriResponse<HttpResponseMessage>> CancelConsignmentAsyncSafe(string consigmentid);
+        Task<ScurriResponse<HttpResponseMessage>> CancelConsignmentAsync(string consigmentid);
 
         /// <summary>
         /// You can use this API call to get the label and any customs invoice documents required for a specific consignment, if required.
@@ -148,14 +108,13 @@ namespace Scurri.Client
         /// </summary>
         /// <param name="manifest"></param>
         /// <returns>Manifest Results and if successful</returns>
-        Task<ManifestResult> CreateManifestAsync(Manifest manifest);
+        Task<ScurriResponse<ManifestResult>> CreateManifestAsync(Manifest manifest);
         /// <summary>
         /// The response contains the PDF documents as a base64-encoded string.
         /// Built with error handling
         /// </summary>
         /// <param name="manifest_id">The identifier of the manifest, as returned by the create API call.</param>
         /// <returns>Returns response object with error handling</returns>
-        Task<HttpResponseMessage> GetManifestDocumentsAsync(string manifest_id);
-        Task<ScurriResponse<HttpResponseMessage>> GetManifestDocumentsAsyncSafe(string manifest_id);
+        Task<ScurriResponse<HttpResponseMessage>> GetManifestDocumentsAsync(string manifest_id);
     }
 }
